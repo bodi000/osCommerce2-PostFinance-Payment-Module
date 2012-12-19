@@ -1,7 +1,7 @@
 <?php
 /*
   $Id: postfinance.php   2009-01-19 16:30
-  PostFinance E-payment Gateway - OSCommerce - Payment Module.
+  PostFinance E-payment Gateway - OSCommerce - Payment Module
 */
 
   class postfinance {

@@ -1,6 +1,7 @@
 <?php
 /*
   $Id: postfinance_ipn.php   2009-01-19 16:30
+  PostFinance E-payment Gateway - OSCommerce - Payment Module
   This file used for to update order status and order details after the completion of the payment process.
 */
 
