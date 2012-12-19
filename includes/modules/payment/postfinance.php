@@ -1,7 +1,7 @@
 <?php
 /*
   $Id: postfinance.php   2009-01-19 16:30
-  Post finance swiss payment gateway - OSCommerce - Payment Module.
+  PostFinance E-payment Gateway - OSCommerce - Payment Module.
 */
 
   class postfinance {
@@ -24,7 +24,7 @@
 	case 1:
 		$this->postFinanceInfo = array(
 							"activeModuleMainTitle"		=> "Activate PostFinance module",
-							"activeModuleSubTitle"		=> "Do you wanna accept payments over Postcard?",
+							"activeModuleSubTitle"		=> "Would you like to accept payments via PostFinance?",
 							"SortMainTitle"				=> "Sort",
 							"SortSubTitle"				=> "Sort order of display. (Lowest is displayed first)",
 							"defCurrMainTitle"			=> "Default Transaction Currency",
@@ -77,12 +77,14 @@
 							"logoSubTitle"				=> "URL/filename of the logo you want to display at the top of the payment page next to the title. The URL must be absolute (contain the full path),it cannot be relative.",
 							"debugEmailMainTitle"		=> "Debug E-Mail Address",
 							"debugEmailSubTitle"		=> "All parameters of an Invalid IPN notification will be sent to this email address if one is entered.",
+							"TemplateURLTitle"			=> "Payment Page Template",
+							"TemplateURLSubTitle"		=> "Absolute URL to the payment page template. Sample template  is located under ext/modules/payment/postfinance/template-oscommerce.html. See PostFinance documentation for details",
 							);
 	break;
 	case 2:
 		$this->postFinanceInfo = array(
 							"activeModuleMainTitle"		=> "Activate PostFinance module",
-							"activeModuleSubTitle"		=> "Do you wanna accept payments over Postcard?",
+							"activeModuleSubTitle"		=> "Would you like to accept payments via PostFinance?",
 							"SortMainTitle"				=> "Sort",
 							"SortSubTitle"				=> "Sort order of display. (Lowest is displayed first)",
 							"defCurrMainTitle"			=> "Default Transaction Currency",
@@ -135,12 +137,15 @@
 							"logoSubTitle"				=> "URL/filename of the logo you want to display at the top of the payment page next to the title. The URL must be absolute (contain the full path),it cannot be relative.",
 							"debugEmailMainTitle"		=> "Debug E-Mail Address",
 							"debugEmailSubTitle"		=> "All parameters of an Invalid IPN notification will be sent to this email address if one is entered.",
+							"TemplateURLTitle"			=> "Payment Page Template",
+							"TemplateURLSubTitle"		=> "Absolute URL to the payment page template. Sample template  is located under ext/modules/payment/postfinance/template-oscommerce.html. See PostFinance documentation for details",		
 							);
 	  break;
 	  case 3:
+	  default:
 		$this->postFinanceInfo = array(
 							"activeModuleMainTitle"		=> "Activate PostFinance module",
-							"activeModuleSubTitle"		=> "Do you wanna accept payments over Postcard?",
+							"activeModuleSubTitle"		=> "Would you like to accept payments via PostFinance?",
 							"SortMainTitle"				=> "Sort",
 							"SortSubTitle"				=> "Sort order of display. (Lowest is displayed first)",
 							"defCurrMainTitle"			=> "Default Transaction Currency",
@@ -193,6 +198,8 @@
 							"logoSubTitle"				=> "URL/filename of the logo you want to display at the top of the payment page next to the title. The URL must be absolute (contain the full path),it cannot be relative.",
 							"debugEmailMainTitle"		=> "Debug E-Mail Address",
 							"debugEmailSubTitle"		=> "All parameters of an Invalid IPN notification will be sent to this email address if one is entered.",
+							"TemplateURLTitle"			=> "Payment Page Template",
+							"TemplateURLSubTitle"		=> "Absolute URL to the payment page template. Sample template  is located under ext/modules/payment/postfinance/template-oscommerce.html. See PostFinance documentation for details",		
 							);
 	  break;
 	}
@@ -484,6 +491,7 @@
 		}else{
 			$usedcurrency	= $currency;
 		}
+		
 		// Following variables for postfiance login and payment page settings
 
 		$merchant_id						= MODULE_PAYMENT_POSTFINANCE_MERCHANT_ID;
@@ -504,47 +512,74 @@
 		$payment_gateway_page_catalogurl	= MODULE_PAYMENT_POSTFINANCE_CATALOGURL;
 		$payment_gateway_page_homeurl		= MODULE_PAYMENT_POSTFINANCE_HOMEURL;
 		$payment_gateway_sha_signature		= MODULE_PAYMENT_POSTFINANCE_SHA1_SIGNATURE;
+		$payment_gateway_page_template		= MODULE_PAYMENT_POSTFINANCE_TEMPLATE_URL;
 
 		$usedtotal = number_format($order->info['total'] * $currencies->get_value($currency), $currencies->get_decimal_places($currency), '.', '');
 		$sidretour = tep_session_name() . '=' . tep_session_id(); 
 		$usedtotal = $usedtotal*100;
+			  
+		$process_button_string = '';
+		$params = array('PSPID' => $merchant_id, 
+						'amount' => $usedtotal, 
+						'language' => $usedlanguage, 
+						'currency' => $usedcurrency, 
+						'orderID' => $order_id,
+						'CN' => $order->billing['firstname']." ".$order->billing['lastname'], 
+						'owneraddress' => $order->billing['street_address'], 
+						'ownerZIP' => $order->billing['postcode'], 
+						'ownercty' => $order->billing['country']['iso_code_2'], 
+						'ownertown' => $order->billing['city'], 
+						'ownertelno' => $order->customer['telephone'], 
+						'EMAIL' => $order->customer['email_address'],
+						'accepturl' => $payment_gateway_page_accepturl,
+						'declineurl' => $payment_gateway_page_declineurl,
+						'exceptionurl' => $payment_gateway_page_exceptionurl,
+						'cancelurl' => $payment_gateway_page_cancelurl,
+						'catalogurl' => $payment_gateway_page_catalogurl,
+						'homeurl' => $payment_gateway_page_homeurl,
+						'TITLE' => $payment_gateway_page_title, 
+						'BGCOLOR' => $payment_gateway_page_bgcolor, 
+						'TXTCOLOR' => $payment_gateway_page_txtcolor, 
+						'TBLBGCOLOR' => $payment_gateway_page_tblbgcolor, 
+						'TBLTXTCOLOR' => $payment_gateway_page_tbltxtcolor, 
+						'BUTTONBGCOLOR' => $payment_gateway_page_buttonbgcolor, 
+						'BUTTONTXTCOLOR' => $payment_gateway_page_buttontxtcolor, 
+						'FONTTYPE' => $payment_gateway_page_fonttype, 
+						'LOGO' => $payment_gateway_page_logo,
+						'TP' => $payment_gateway_page_template,					
+						);
+						
+		//echo '<pre>'; print_r($params); die();
+		 
+		$params = array_change_key_case($params, CASE_UPPER);
+		ksort($params);
+		
+		while(list($key, $val) = each($params)){
+		 if($val){
+		  $process_button_string .= tep_draw_hidden_field($key, $val);	  
+		  $sha_str .= $key.'='.$val.$payment_gateway_sha_signature;
+		  //$sha_str_debug .= $key.' = '.$val. ' ' . $payment_gateway_sha_signature."<br>";		    
+		 }
+		}
 
-		//$sessid = "osCsid=".tep_session_id('osCsid');
-		$shaSign = sha1($order_id.$usedtotal.$usedcurrency.$merchant_id.$payment_gateway_sha_signature);
-
-	  // First fields untill TITLE are requerid, next are optional
+		// params that must not be used for SHAsign calculation
+		$params_optional = array('txtHistoryBack' => 'false',
+								 tep_session_name() => tep_session_id()
+								 );
 	
-		$process_button_string 	=	tep_draw_hidden_field('PSPID', $merchant_id) 
-									. tep_draw_hidden_field('amount', $usedtotal) 
-									. tep_draw_hidden_field('payment', $this->code) 
-									. tep_draw_hidden_field('language', $usedlanguage) 
-									. tep_draw_hidden_field('currency', $usedcurrency) 
-									. tep_draw_hidden_field('orderID', $order_id)
-									. tep_draw_hidden_field('CN', $order->billing['firstname']." ".$order->billing['lastname']) 
-									. tep_draw_hidden_field('owneraddress', $order->billing['street_address']) 
-									. tep_draw_hidden_field('ownerZIP', $order->billing['postcode']) 
-									. tep_draw_hidden_field('ownercty', $order->billing['city']) 
-									. tep_draw_hidden_field('ownertelno', $order->customer['telephone']) 
-									. tep_draw_hidden_field('EMAIL', $order->customer['email_address'])
-									. tep_draw_hidden_field('accepturl', $payment_gateway_page_accepturl)
-									. tep_draw_hidden_field('declineurl', $payment_gateway_page_declineurl)
-									. tep_draw_hidden_field('exceptionurl', $payment_gateway_page_exceptionurl)
-									. tep_draw_hidden_field('cancelurl', $payment_gateway_page_cancelurl)
-									. tep_draw_hidden_field('catalogurl', $payment_gateway_page_catalogurl)
-									. tep_draw_hidden_field('homeurl', $payment_gateway_page_homeurl)
-									. tep_draw_hidden_field('SHASign', $shaSign)
-																 // from here page color setting / optional fields
-									. tep_draw_hidden_field('TITLE', $payment_gateway_page_title) 
-									. tep_draw_hidden_field('BGCOLOR', $payment_gateway_page_bgcolor) 
-									. tep_draw_hidden_field('TXTCOLOR', $payment_gateway_page_txtcolor) 
-									. tep_draw_hidden_field('TBLBGCOLOR', $payment_gateway_page_tblbgcolor) 
-									. tep_draw_hidden_field('TBLTXTCOLOR', $payment_gateway_page_tbltxtcolor) 
-									. tep_draw_hidden_field('BUTTONBGCOLOR', $payment_gateway_page_buttonbgcolor) 
-									. tep_draw_hidden_field('BUTTONTXTCOLOR', $payment_gateway_page_buttontxtcolor) 
-									. tep_draw_hidden_field('FONTTYPE', $payment_gateway_page_fonttype) 
-									. tep_draw_hidden_field('LOGO', $payment_gateway_page_logo)
-									. tep_draw_hidden_field('txtHistoryBack', 'false')
-									. tep_draw_hidden_field(tep_session_name(),tep_session_id());
+		$params = array_change_key_case($params_optional, CASE_UPPER);
+
+		while(list($key, $val) = each($params_optional)){
+		 if($val){
+		  $process_button_string .= tep_draw_hidden_field($key, $val);
+		 }
+		}
+		
+		//echo '<div style="text-align: left; ">'.$sha_str_debug.'<br><br>';
+		//echo $sha_str . '</div>';
+		
+		$shaSign = strtoupper(sha1($sha_str));
+		$process_button_string .= tep_draw_hidden_field('SHASign', $shaSign);	  
 
 	  return $process_button_string;
     }
@@ -578,19 +613,19 @@
 	 }
 
 		if ($order_status == '5') {
-          $comment_status = 'Post Finance IPN Verified [Payment has been authorized]';
+          $comment_status = 'PostFinance IPN Verified [Payment has been authorized]';
         } elseif ( ($order_status == '9') ) {
-          $comment_status = 'Post Finance IPN Verified [Payment has been accepted]';
+          $comment_status = 'PostFinance IPN Verified [Payment has been accepted]';
         }elseif ( ($order_status == '51' || $order_status == '91' ) ) {
-          $comment_status = 'Post Finance IPN Verified [Payment has been pending]';
+          $comment_status = 'PostFinance IPN Verified [Payment is pending]';
         }
 
 		if ($order_status == "2") {
-          $comment_status = 'Post Fianance IPN Invalid [Declined]';
+          $comment_status = 'PostFinance IPN Invalid [Declined]';
         } elseif ( $order_status == "52" || $order_status == "92" ) {
-          $comment_status = 'Post Fianance IPN Invalid [Exception occured]';
+          $comment_status = 'PostFinance IPN Invalid [Exception occured]';
         } elseif ( $order_status == "1" ) {
-          $comment_status = 'Post Fianance IPN Invalid [Cancelled]';
+          $comment_status = 'PostFinance IPN Invalid [Cancelled]';
         }
 
 	  $sql_data_array = array('orders_id' => $order_id,
@@ -845,9 +880,9 @@
      
 		tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('".$this->postFinanceInfo[SortMainTitle]."', 'MODULE_PAYMENT_POSTFINANCE_SORT_ORDER', '0', '".$this->postFinanceInfo[SortSubTitle]."', '6', '0', now())");
 	    
-		tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('".$this->postFinanceInfo[defCurrMainTitle]."', 'MODULE_PAYMENT_POSTFINANCE_CURRENCY', 'CHF', '".$this->postFinanceInfo[defCurrSubTitle]."', '6', '0', now())");
+		tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('".$this->postFinanceInfo[defCurrMainTitle]."', 'MODULE_PAYMENT_POSTFINANCE_CURRENCY', '', '".$this->postFinanceInfo[defCurrSubTitle]."', '6', '0', now())");
 		
-	 tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('".$this->postFinanceInfo[preparingMainTitle]."', 'MODULE_PAYMENT_POSTFINANCE_PREPARE_ORDER_STATUS_ID', '" . $status_id . "', '".$this->postFinanceInfo[preparingSubTitle]."', '6', '0', 'tep_cfg_pull_down_order_statuses(', 'tep_get_order_status_name', now())");
+	 	tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('".$this->postFinanceInfo[preparingMainTitle]."', 'MODULE_PAYMENT_POSTFINANCE_PREPARE_ORDER_STATUS_ID', '" . $status_id . "', '".$this->postFinanceInfo[preparingSubTitle]."', '6', '0', 'tep_cfg_pull_down_order_statuses(', 'tep_get_order_status_name', now())");
 
 		tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('".$this->postFinanceInfo[statusMainTitle]."', 'MODULE_PAYMENT_POSTFINANCE_ORDER_STATUS_ID', '0', '".$this->postFinanceInfo[statusSubTitle]."', '6', '0', 'tep_cfg_pull_down_order_statuses(', 'tep_get_order_status_name', now())");
 		
@@ -856,6 +891,8 @@
 		tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('".$this->postFinanceInfo[ModMainTitle]."', 'MODULE_PAYMENT_POSTFINANCE_MOD', '1', '".$this->postFinanceInfo[ModSubTitle]."', '6', '1', 'tep_cfg_select_option(array(\'1\', \'0\'), ', now())");
 
 		tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('".$this->postFinanceInfo['debugEmailMainTitle']."', 'MODULE_PAYMENT_POSTFINANCE_DEBUG_EMAIL', '', '".$this->postFinanceInfo['debugEmailDSubTitle']."', '6', '0', now())");
+	
+	 	tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('".$this->postFinanceInfo['TemplateURLTitle']."', 'MODULE_PAYMENT_POSTFINANCE_TEMPLATE_URL', '', '".$this->postFinanceInfo['TemplateURLSubTitle']."', '6', '0', now())");
     }
 
     function remove() {
@@ -871,7 +908,7 @@
 						'MODULE_PAYMENT_POSTFINANCE_BUTTONTXTCOLOR','MODULE_PAYMENT_POSTFINANCE_FONTTYPE','MODULE_PAYMENT_POSTFINANCE_LOGO',
 						'MODULE_PAYMENT_POSTFINANCE_ACCEPTURL','MODULE_PAYMENT_POSTFINANCE_DECLINEURL','MODULE_PAYMENT_POSTFINANCE_EXCEPTIONURL',
 						'MODULE_PAYMENT_POSTFINANCE_CANCELURL','MODULE_PAYMENT_POSTFINANCE_CATALOGURL','MODULE_PAYMENT_POSTFINANCE_HOMEURL',
-						'MODULE_PAYMENT_POSTFINANCE_ZONE','MODULE_PAYMENT_POSTFINANCE_DEBUG_EMAIL');
+						'MODULE_PAYMENT_POSTFINANCE_TEMPLATE_URL','MODULE_PAYMENT_POSTFINANCE_ZONE','MODULE_PAYMENT_POSTFINANCE_DEBUG_EMAIL');
 
 		$keys[]	= 'MODULE_PAYMENT_POSTFINANCE_MOD'; 
 		return $keys;
